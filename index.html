@@ -14,38 +14,7 @@
         h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 5px;
-        }
-        .backup-panel {
-            text-align: center;
             margin-bottom: 25px;
-            background: #fff;
-            padding: 10px;
-            display: inline-block;
-            position: relative;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .btn-backup {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            margin: 0 5px;
-        }
-        .btn-backup:hover {
-            background-color: #218838;
-        }
-        .btn-import {
-            background-color: #17a2b8;
-        }
-        .btn-import:hover {
-            background-color: #138496;
         }
         .container {
             display: grid;
@@ -109,21 +78,12 @@
             background-color: #4caf50;
             color: white;
         }
-        #fileInput {
-            display: none;
-        }
     </style>
 </head>
 <body>
 
     <h1>Painel de Tabelas (1 a 1000)</h1>
     
-    <div class="backup-panel">
-        <button class="btn-backup" onclick="exportBackup()">💾 Exportar Backup</button>
-        <button class="btn-backup btn-import" onclick="document.getElementById('fileInput').click()">📂 Importar Backup</button>
-        <input type="file" id="fileInput" accept=".json" onchange="importBackup(event)">
-    </div>
-
     <div class="container" id="tablesContainer"></div>
 
     <script>
@@ -228,48 +188,6 @@
                 savedNames[id] = newName.trim();
                 localStorage.setItem('tableNames', JSON.stringify(savedNames));
             }
-        }
-
-        // --- FUNÇÕES DE SEGURANÇA (BACKUP) ---
-        function exportBackup() {
-            const backupData = {
-                names: savedNames,
-                marks: savedMarks
-            };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", "backup_tabelas.json");
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-        }
-
-        function importBackup(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const parsedData = JSON.parse(e.target.result);
-                    if (parsedData.names && parsedData.marks) {
-                        savedNames = parsedData.names;
-                        savedMarks = parsedData.marks;
-                        
-                        localStorage.setItem('tableNames', JSON.stringify(savedNames));
-                        localStorage.setItem('tableMarks', JSON.stringify(savedMarks));
-                        
-                        renderTables();
-                        alert("Backup carregado com sucesso!");
-                    } else {
-                        alert("Arquivo de backup inválido.");
-                    }
-                } catch (err) {
-                    alert("Erro ao ler o arquivo de backup.");
-                }
-            };
-            reader.readAsText(file);
         }
     </script>
 </body>
