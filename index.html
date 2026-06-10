@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Tabelas 1-100</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .backup-panel {
+            text-align: center;
+            margin-bottom: 25px;
+            background: #fff;
+            padding: 10px;
+            display: inline-block;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .btn-backup {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        .btn-backup:hover {
+            background-color: #218838;
+        }
+        .btn-import {
+            background-color: #17a2b8;
+        }
+        .btn-import:hover {
+            background-color: #138496;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .table-container {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+        }
+        .table-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #444;
+        }
+        .btn-config {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .btn-config:hover {
+            background-color: #0056b3;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            border-top: 1px solid #000;
+            border-left: 1px solid #000;
+            user-select: none;
+        }
+        .cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            font-weight: bold;
+            border-right: 1px solid #000;
+            border-bottom: 1px solid #000;
+            cursor: pointer;
+            background-color: #fff;
+            transition: background 0.05s;
+        }
+        .cell.marked {
+            background-color: #4caf50;
+            color: white;
+        }
+        #fileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Painel de Tabelas (1 a 1000)</h1>
+    
+    <div class="backup-panel">
+        <button class="btn-backup" onclick="exportBackup()">💾 Exportar Backup</button>
+        <button class="btn-backup btn-import" onclick="document.getElementById('fileInput').click()">📂 Importar Backup</button>
+        <input type="file" id="fileInput" accept=".json" onchange="importBackup(event)">
+    </div>
+
+    <div class="container" id="tablesContainer"></div>
+
+    <script>
+        const TOTAL_TABLES = 1000;
+        const container = document.getElementById('tablesContainer');
+        
+        let savedNames = JSON.parse(localStorage.getItem('tableNames')) || {};
+        let savedMarks = JSON.parse(localStorage.getItem('tableMarks')) || {};
+
+        function renderTables() {
+            let htmlBuffer = '';
+            for (let t = 1; t <= TOTAL_TABLES; t++) {
+                const tableName = savedNames[t] || `Tabela ${t}`;
+                const markedCells = savedMarks[t] || [];
+                
+                htmlBuffer += `
+                    <div class="table-container" data-table-id="${t}">
+                        <div class="table-header">
+                            <span class="table-title" id="title-${t}">${tableName}</span>
+                            <button class="btn-config" onclick="renameTable(${t})">Config</button>
+                        </div>
+                        <div class="grid">
+                `;
+                
+                for (let c = 1; c <= 100; c++) {
+                    const isMarked = markedCells.includes(c) ? 'marked' : '';
+                    htmlBuffer += `<div class="cell ${isMarked}" data-number="${c}">${c}</div>`;
+                }
+                
+                htmlBuffer += `
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = htmlBuffer;
+        }
+
+        renderTables();
+
+        // --- CONTROLE DE CLIQUE E ARRASTE ---
+        let isMouseDown = false;
+        let isMarkingMode = true;
+        let affectedTables = new Set(); 
+
+        container.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('cell')) {
+                isMouseDown = true;
+                affectedTables.clear();
+                
+                const tableId = e.target.closest('.table-container').dataset.tableId;
+                affectedTables.add(tableId);
+
+                if (e.target.classList.contains('marked')) {
+                    isMarkingMode = false;
+                    e.target.classList.remove('marked');
+                } else {
+                    isMarkingMode = true;
+                    e.target.classList.add('marked');
+                }
+            }
+        });
+
+        container.addEventListener('mouseover', (e) => {
+            if (isMouseDown && e.target.classList.contains('cell')) {
+                const tableId = e.target.closest('.table-container').dataset.tableId;
+                affectedTables.add(tableId);
+
+                if (isMarkingMode) {
+                    e.target.classList.add('marked');
+                } else {
+                    e.target.classList.remove('marked');
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isMouseDown) {
+                isMouseDown = false;
+                
+                affectedTables.forEach(tableId => {
+                    const tableContainer = document.querySelector(`[data-table-id="${tableId}"]`);
+                    const markedElements = tableContainer.querySelectorAll('.cell.marked');
+                    const currentMarks = Array.from(markedElements).map(el => parseInt(el.dataset.number));
+                    
+                    if (currentMarks.length > 0) {
+                        savedMarks[tableId] = currentMarks;
+                    } else {
+                        delete savedMarks[tableId];
+                    }
+                });
+
+                localStorage.setItem('tableMarks', JSON.stringify(savedMarks));
+            }
+        });
+
+        function renameTable(id) {
+            const currentName = savedNames[id] || `Tabela ${id}`;
+            const newName = prompt(`Digite o novo nome para a Tabela ${id}:`, currentName);
+            
+            if (newName !== null && newName.trim() !== "") {
+                document.getElementById(`title-${id}`).innerText = newName.trim();
+                savedNames[id] = newName.trim();
+                localStorage.setItem('tableNames', JSON.stringify(savedNames));
+            }
+        }
+
+        // --- FUNÇÕES DE SEGURANÇA (BACKUP) ---
+        function exportBackup() {
+            const backupData = {
+                names: savedNames,
+                marks: savedMarks
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "backup_tabelas.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (parsedData.names && parsedData.marks) {
+                        savedNames = parsedData.names;
+                        savedMarks = parsedData.marks;
+                        
+                        localStorage.setItem('tableNames', JSON.stringify(savedNames));
+                        localStorage.setItem('tableMarks', JSON.stringify(savedMarks));
+                        
+                        renderTables();
+                        alert("Backup carregado com sucesso!");
+                    } else {
+                        alert("Arquivo de backup inválido.");
+                    }
+                } catch (err) {
+                    alert("Erro ao ler o arquivo de backup.");
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
